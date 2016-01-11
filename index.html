@@ -20,7 +20,7 @@
         }
       });
       myDataRef.on('child_added', function(snapshot) {
-        var message = snapshot.val();
+        var message = snapshot.val(); //tells database that message has arrived
         displayChatMessage(message.name, message.text);
       });
       function displayChatMessage(name, text) {
