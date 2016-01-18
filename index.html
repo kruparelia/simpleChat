@@ -10,54 +10,57 @@
         <!-- AngularFire -->
         <script src="https://cdn.firebase.com/libs/angularfire/1.1.3/angularfire.min.js"></script>
         <script>
-            var app = angular.module("myApp", ["firebase"]); 
-				// set up angular app, must match in mark up in HTML
+            var app = angular.module("myApp", ["firebase"]);
             app.controller("myCtrl", function($scope, $firebaseArray, $firebaseAuth) {
-                var ref = new Firebase("https://amber-inferno-359.firebaseio.com/");
-
+                var ref = new Firebase("https://dazzling-heat-1553.firebaseio.com/messages");
                 // create a synchronized array
                 $scope.messages = $firebaseArray(ref);
-
                 // add new items to the array
                 // the message is automatically added to our Firebase database!
+                $scope.google = null;
+                ref.onAuth(function(authData) {
+                    if (authData) {
+                        console.log("Authenticated with uid:", authData.uid);
+                        $scope.auth = authData;
+                    } else {
+                        console.log("Client unauthenticated.")
+                    }
+                });
                 $scope.addMessage = function() {
-                    var sSender = "none";
-                    try{
-                    	sSender = $scope.google.displayName;
-                    }catch(err){
-                    	console.log(err);
-                    }//try-catch is used so you don't have to sign in to write a message, it says sender as "none"
                     $scope.messages.$add({
                         text: $scope.newMessageText,
-                        sender: sSender
+                        sender: $scope.auth.google.displayName,
+                        uid:$scope.auth.uid
                     });
+                    $scope.newMessageText = "";
                 };
                 $scope.login =function() {
                     var provider = 'google';
                     var scope = {scope:'email'};
                     var auth = $firebaseAuth(ref);
-                    auth.$authWithOAuthPopup(provider, scope).then(function(authData) {
-                        $scope.google = authData.google;
-                        console.log("Logged in as:", authData.google);
-                    }, function (error) {
-                        // Handle error
-                        console.log(error);
-                    });
-                    
+                    auth.$authWithOAuthRedirect(provider, scope);
+                };
+                $scope.logout = function(){
+                    $scope.auth = null;
+                    ref.unauth();
                 }
-
                 // click on `index.html` above to see $remove() and $save() in action
             });            
         </script>
     </head>
     <body>
         <div ng-app="myApp" ng-controller="myCtrl">
-            <div ng-repeat="(n, message) in messages track by n">{{message.sender}}:{{message.text}}</div>
-            <form><p>Message : <input type="text" ng-model="newMessageText"></p>
+            <form ng-hide="auth != null">
+                <p>This is a chat program that uses firebase as the back end. Click the login button to verify your user name with google and send messages.</p>
+                <button ng-hide="google!=null" type = "submit" ng-click="login()">Login</button>
+            </form>
+            <form ng-hide="auth==null">
+                <div ng-repeat="(n, message) in messages track by n">{{message.sender}}:{{message.text}}</div>
+                <p >Message : <input type="text" ng-model="newMessageText"></p>
                 <button type = "submit" ng-click="addMessage()">Send</button>
-                <button ng-click="login()">Login</button>
+                <button ng-click="logout()">Logout</button>
             </form>
         </div>
 
     </body>
-</html
+</html>
