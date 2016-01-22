@@ -1,6 +1,8 @@
 <!Doctype html>
 <html>
     <head>
+        <!-- phonegap -->
+        <script src="cordova.js"></script>
         <!-- AngularJS -->
         <script src="js/angular.min.js"></script>
 
@@ -13,18 +15,19 @@
             var app = angular.module("myApp", ["firebase"]);
             app.controller("myCtrl", function($scope, $firebaseArray, $firebaseAuth) {
                 var ref = new Firebase("https://amber-inferno-359.firebaseio.com/");
-                // create a synchronized array
-                $scope.messages = $firebaseArray(ref);
-                // add new items to the array
-                // the message is automatically added to our Firebase database!
-                $scope.google = null;
+                $scope.auth = null;
                 ref.onAuth(function(authData) {
                     if (authData) {
                         console.log("Authenticated with uid:", authData.uid);
                         $scope.auth = authData;
+                        // create a synchronized array
+                        $scope.messages = $firebaseArray(ref);
+                        // add new items to the array
+                        // the message is automatically added to our Firebase database!
                     } else {
                         console.log("Client unauthenticated.")
                     }
+                    $scope.$apply();
                 });
                 $scope.addMessage = function() {
                     $scope.messages.$add({
@@ -38,12 +41,24 @@
                     var provider = 'google';
                     var scope = {scope:'email'};
                     var auth = $firebaseAuth(ref);
-                    auth.$authWithOAuthRedirect(provider, scope);
+                    auth.$authWithOAuthPopup(provider, function(error, authData){
+                        if (error) {
+                            // an error occurred while attempting login
+                            alert(error);
+                            console.log(error);
+                        }
+                    }, scope);
                 };
                 $scope.logout = function(){
                     $scope.auth = null;
                     ref.unauth();
-                }
+                };
+                $scope.test = function(){
+                    window.open('http://apache.org', '_blank', 'location=yes');
+                };
+                $scope.testLogin = function(){
+                    $scope.auth = ref.getAuth();
+                };
                 // click on `index.html` above to see $remove() and $save() in action
             });            
         </script>
@@ -52,12 +67,16 @@
         <div ng-app="myApp" ng-controller="myCtrl">
             <form ng-hide="auth != null">
                 <p>This is a chat program that uses firebase as the back end. Click the login button to verify your user name with google and send messages.</p>
-                <button ng-hide="google!=null" type = "submit" ng-click="login()">Login</button>
+                <button type = "submit" ng-click="login()">Login</button>
+                <button ng-click="test()">test InApp Browser</button>
+                <button ng-click="testLogin()">test to see if we are already logged in</button>
+                <button ng-click="logout()">Logout</button>
             </form>
             <form ng-hide="auth==null">
                 <div ng-repeat="(n, message) in messages track by n">{{message.sender}}:{{message.text}}</div>
                 <p >Message : <input type="text" ng-model="newMessageText"></p>
                 <button type = "submit" ng-click="addMessage()">Send</button>
+                <button ng-click="testLogin()">test to see if we are already logged in</button>
                 <button ng-click="logout()">Logout</button>
             </form>
         </div>
